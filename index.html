@@ -52,7 +52,6 @@
 
         .logo { font-weight: 700; font-size: 1.5rem; letter-spacing: 2px; cursor: pointer; }
         .logo span { color: var(--mint); }
-        .admin-trigger { color: var(--mint); cursor: pointer; border: 1px solid var(--mint); padding: 5px 12px; border-radius: 4px; font-size: 0.8rem; }
 
         /* VIEWS */
         .view { display: none; padding-top: 120px; width: 100%; min-height: 100vh; }
@@ -73,13 +72,6 @@
         .card:hover { border-color: var(--mint); transform: translateY(-5px); }
         .card h3 { margin-bottom: 10px; font-size: 1.8rem; }
         .card p { color: #aaa; font-size: 0.9rem; margin-bottom: 20px; }
-
-        /* ADMIN BOX */
-        .admin-box { max-width: 500px; margin: 0 auto; background: var(--glass-bg); backdrop-filter: blur(30px); padding: 40px; border-radius: 16px; border: 1px solid var(--glass-border); }
-        .field { margin-bottom: 20px; text-align: left; }
-        .field label { display: block; color: var(--mint); margin-bottom: 5px; font-size: 0.7rem; font-weight: bold; }
-        .field input { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 6px; outline: none; }
-        .save-btn { width: 100%; padding: 15px; background: var(--mint); border: none; color: black; font-weight: bold; border-radius: 6px; cursor: pointer; }
 
         /* LOGIN OVERLAY */
         #login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(15px); }
@@ -120,6 +112,10 @@
             <p onclick="closeLogin()" style="margin-top:20px; font-size: 0.7rem; color: #555; cursor: pointer;">CANCEL</p>
         </div>
     </div>
+
+    <header id="mainHeader">
+        <div class="logo" onclick="showView('home')">MINTY<span>HUB</span></div>
+    </header>
 
     <!-- HOME VIEW -->
     <section id="home-view" class="view active">
@@ -276,5 +272,4 @@
         window.onload = initHub;
     </script>
 </body>
-
 </html>

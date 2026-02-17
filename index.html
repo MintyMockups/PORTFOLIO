@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minty Portfolio | Hub</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --mint: #00d2a8;
+            --dark: #050505;
+            --glass-bg: rgba(20, 20, 20, 0.4); 
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: var(--dark);
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* --- AETHER BACKGROUND SYSTEM --- */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -3; background: #000; filter: blur(50px); opacity: 0.8;
+        }
+        .overlay-dim { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: -2; pointer-events: none; }
+        .noise { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; opacity: 0.05; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E"); }
+
+        /* HEADER LOGIC */
+        header {
+            height: 80px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 5%; position: fixed; width: 100%; top: 0; z-index: 1000;
+            background: rgba(5, 5, 5, 0.4);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            transition: transform 0.5s cubic-bezier(0.85, 0, 0.15, 1); /* Smooth Slide */
+        }
+
+        /* This class is added by JS when viewing a project */
+        header.hide-header {
+            transform: translateY(-100%);
+        }
+
+        .logo { font-weight: 700; font-size: 1.5rem; letter-spacing: 2px; cursor: pointer; }
+        .logo span { color: var(--mint); }
+        .admin-trigger { color: var(--mint); cursor: pointer; border: 1px solid var(--mint); padding: 5px 12px; border-radius: 4px; font-size: 0.8rem; }
+
+        /* VIEWS */
+        .view { display: none; padding-top: 120px; width: 100%; min-height: 100vh; }
+        .view.active { display: block; }
+        
+        /* The Viewer view needs 0 padding so the iframe hits the top */
+        #viewer-view.active { display: block; padding-top: 0; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; text-align: center; }
+        
+        /* GLASS CARDS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
+        .card {
+            background: var(--glass-bg); backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border); border-radius: 16px;
+            padding: 40px; text-align: left; cursor: pointer; transition: 0.3s;
+        }
+        .card:hover { border-color: var(--mint); transform: translateY(-5px); }
+        .card h3 { margin-bottom: 10px; font-size: 1.8rem; }
+        .card p { color: #aaa; font-size: 0.9rem; margin-bottom: 20px; }
+
+        /* ADMIN BOX */
+        .admin-box { max-width: 500px; margin: 0 auto; background: var(--glass-bg); backdrop-filter: blur(30px); padding: 40px; border-radius: 16px; border: 1px solid var(--glass-border); }
+        .field { margin-bottom: 20px; text-align: left; }
+        .field label { display: block; color: var(--mint); margin-bottom: 5px; font-size: 0.7rem; font-weight: bold; }
+        .field input { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #333; color: white; border-radius: 6px; outline: none; }
+        .save-btn { width: 100%; padding: 15px; background: var(--mint); border: none; color: black; font-weight: bold; border-radius: 6px; cursor: pointer; }
+
+        /* LOGIN OVERLAY */
+        #login-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(15px); }
+
+        /* IFRAME VIEWER */
+        #viewer-view { height: 100vh; width: 100vw; overflow: hidden; background: #000; position: relative; }
+        iframe { width: 100%; height: 100%; border: none; }
+        
+        /* Floating Back Button - Styled to look good on any sub-site */
+        .back-float { 
+            position: fixed; bottom: 25px; left: 25px; 
+            background: #fff; color: black; 
+            padding: 12px 25px; border-radius: 50px; 
+            font-weight: 800; font-size: 0.8rem;
+            cursor: pointer; z-index: 9999; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: none; /* Hidden by default */
+        }
+        .back-float:hover { background: var(--mint); }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas-container"></canvas>
+    <div class="overlay-dim"></div>
+    <div class="noise"></div>
+
+    <button id="hubReturnBtn" class="back-float" onclick="showView('home')">← Back to Hub</button>
+
+    <div id="login-overlay">
+        <div class="admin-box" style="text-align: center; width: 320px;">
+            <h2 style="margin-bottom: 20px; font-size: 0.8rem; letter-spacing: 2px;">SECURE ACCESS</h2>
+            <input type="password" id="passCode" placeholder="Enter Password" style="width: 100%; padding: 10px; margin-bottom: 20px; background: #000; border: 1px solid #444; color: white; text-align: center;">
+            <button onclick="unlockAdmin()" class="save-btn">Unlock</button>
+            <p onclick="closeLogin()" style="margin-top:20px; font-size: 0.7rem; color: #555; cursor: pointer;">CANCEL</p>
+        </div>
+    </div>
+
+    <header id="mainHeader">
+        <div class="logo" onclick="showView('home')">MINTY<span>HUB</span></div>
+        <div class="admin-trigger" onclick="openLogin()">ADMIN PANEL</div>
+    </header>
+
+    <!-- HOME VIEW -->
+    <section id="home-view" class="view active">
+        <div class="container">
+            <h1 style="font-size: clamp(3rem, 8vw, 6rem); line-height: 1; margin-bottom: 20px;"><span style="color:var(--mint); font-style: italic;">PORTFOLIO</span></h1>
+            <div id="projectGrid" class="grid"></div>
+        </div>
+    </section>
+
+    <!-- VIEWER VIEW -->
+    <section id="viewer-view" class="view">
+        <iframe id="projectFrame" src=""></iframe>
+    </section>
+
+    <!-- ADMIN VIEW -->
+    <section id="admin-view" class="view">
+        <div class="container">
+            <div class="admin-box">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+                    <h2>Add Project</h2>
+                    <button onclick="showView('home')" style="background:none; border:none; color:#555; cursor:pointer;">EXIT</button>
+                </div>
+                <div class="field"><label>Name</label><input type="text" id="addName" placeholder="Sub-website Name"></div>
+                <div class="field"><label>Folder Path</label><input type="text" id="addPath" placeholder="folder-name/"></div>
+                <div class="field"><label>Description</label><input type="text" id="addDesc" placeholder="Brief metadata..."></div>
+                <button class="save-btn" onclick="saveNewProject()">DEPLOY TO HUB</button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // --- AETHER BACKGROUND LOGIC ---
+        const canvas = document.getElementById('canvas-container');
+        const ctx = canvas.getContext('2d');
+        let width, height, particles = [];
+        const colors = ['#00f2ff', '#00d2a8', '#004d40', '#ffffff'];
+
+        const resize = () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        };
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.vy = (Math.random() - 0.5) * 1.5;
+                this.radius = Math.random() * 120 + 80;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < -100 || this.x > width + 100) this.vx *= -1;
+                if (this.y < -100 || this.y > height + 100) this.vy *= -1;
+            }
+            draw() {
+                ctx.globalCompositeOperation = 'screen'; 
+                ctx.beginPath();
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                gradient.addColorStop(0, this.color);
+                gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = gradient;
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        const initParticles = () => {
+            particles = [];
+            for (let i = 0; i < 10; i++) particles.push(new Particle());
+        };
+
+        const animate = () => {
+            ctx.clearRect(0, 0, width, height);
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        };
+
+        window.addEventListener('resize', () => { resize(); initParticles(); });
+        resize(); initParticles(); animate();
+
+        // --- PORTFOLIO LOGIC ---
+        const ADMIN_PASSWORD = "minty123";
+        let projects = [
+            { name: "Gaming Platform", path: "project1/", desc: "Immersive gaming directory interface." },
+            { name: "Dev Portfolio", path: "project2/", desc: "Minimalist engineering showcase." }
+        ];
+
+        function initHub() {
+            const stored = localStorage.getItem('minty_hub_projects');
+            if (stored) projects = JSON.parse(stored);
+            renderGrid();
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('projectGrid');
+            grid.innerHTML = '';
+            projects.forEach((item) => {
+                grid.innerHTML += `
+                    <div class="card" onclick="launchProject('${item.path}')">
+                        <h3>${item.name}</h3>
+                        <p>${item.desc}</p>
+                        <div style="color:var(--mint); font-weight:bold; font-size:0.8rem;">LAUNCH PROJECT →</div>
+                    </div>`;
+            });
+        }
+
+        function showView(id) {
+            const header = document.getElementById('mainHeader');
+            const backBtn = document.getElementById('hubReturnBtn');
+
+            // Toggle Header and Back Button visibility
+            if (id === 'viewer') {
+                header.classList.add('hide-header');
+                backBtn.style.display = 'block';
+            } else {
+                header.classList.remove('hide-header');
+                backBtn.style.display = 'none';
+                document.getElementById('projectFrame').src = ""; // Clear iframe to stop sounds/video
+            }
+
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id + '-view').classList.add('active');
+        }
+
+        function launchProject(path) {
+            document.getElementById('projectFrame').src = path;
+            showView('viewer');
+        }
+
+        function openLogin() { document.getElementById('login-overlay').style.display = 'flex'; }
+        function closeLogin() { document.getElementById('login-overlay').style.display = 'none'; }
+
+        function unlockAdmin() {
+            if (document.getElementById('passCode').value === ADMIN_PASSWORD) {
+                closeLogin(); showView('admin'); document.getElementById('passCode').value = '';
+            } else { alert("Wrong Password!"); }
+        }
+
+        function saveNewProject() {
+            const name = document.getElementById('addName').value;
+            const path = document.getElementById('addPath').value;
+            const desc = document.getElementById('addDesc').value;
+            if (!name || !path) return alert("Fill in Name and Path!");
+            projects.push({ name, path, desc });
+            localStorage.setItem('minty_hub_projects', JSON.stringify(projects));
+            renderGrid(); showView('home');
+        }
+
+        window.onload = initHub;
+    </script>
+</body>
+</html>
